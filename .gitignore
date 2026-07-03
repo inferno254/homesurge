@@ -13,3 +13,5 @@ dist
 .cursor
 
 supabase/.temp/
+.vercel
+.env*
