@@ -1,0 +1,6 @@
+{
+  "framework": "vite",
+  "rootDirectory": "homesurge",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
+}
