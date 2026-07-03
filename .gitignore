@@ -1,0 +1,15 @@
+node_modules
+.env
+.env.*
+!.env.example
+dist
+.tmp
+*.local
+.DS_Store
+*.log
+.auxly/
+
+.vscode
+.cursor
+
+supabase/.temp/

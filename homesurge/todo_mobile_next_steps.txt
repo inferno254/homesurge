@@ -1,0 +1,25 @@
+Mobile app follow-up plan
+
+Step 1 (now): Add minimal guardrails + refactor architecture safely (split app.dart)
+- Create: router.dart, theme.dart, providers.dart, repository.dart, models/property.dart, controllers/local_ids_controller.dart
+- Create: screens (home/browse/saved/compare/detail)
+- Create: widgets (property_card, grid background, inquiry card, etc.)
+- Keep behavior identical; only move code.
+
+Step 2: Improve robustness
+- Consistent user-friendly error UI for RPC failures
+- Handle empty/invalid Supabase config (show message instead of throwing)
+
+Step 3: Performance
+- Debounce browse search
+- Reduce recomputation in browse filter logic
+- Avoid recreating Intl currency formatter in build
+
+Step 4: Quality
+- Run flutter analyze
+- Fix formatting/lints
+- Quick manual QA: navigation + loading + saved/compare persistence
+
+Step 5: Documentation
+- README_mobile.md with env keys and run instructions
+

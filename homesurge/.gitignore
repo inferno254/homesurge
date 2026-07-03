@@ -1,0 +1,13 @@
+node_modules
+dist
+.tmp
+*.local
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+
+# Auxly - AI Task Management (internal data)
+.auxly/
+.vercel

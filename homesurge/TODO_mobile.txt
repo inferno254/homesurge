@@ -1,0 +1,24 @@
+TODO_mobile (execution tracker)
+
+Step 1: Split monolithic mobile/lib/app.dart into focused files (behavior-preserving)
+- Create new files: theme.dart, router.dart, providers.dart, models/, repository.dart, state/, screens/, widgets/
+- Update mobile/lib/main.dart and any imports
+- Ensure navigation routes and UI stay identical
+
+Step 2: Robustness improvements
+- Handle Supabase/RPC errors consistently (user-friendly messages)
+- Avoid throwing on missing Supabase; show UI fallback
+
+Step 3: Performance improvements
+- Debounce browse search filtering
+- Reduce unnecessary rebuilds
+- Cache Intl formatter(s)
+
+Step 4: Quality checks
+- flutter analyze
+- flutter test (if any)
+- quick manual QA: browse/saved/compare/detail + save/compare persistence
+
+Step 5: Documentation
+- README_mobile.md with required env vars + run instructions
+
