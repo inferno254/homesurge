@@ -56,7 +56,7 @@ ${property.displayLocation}
 
 ${property.description ?? property.aiGeneratedDescription ?? ''}
 
-View on Homesurge: https://homesurge.co/listing/${property.id}
+View on Homesurge: https://homesurge.vercel.app/listing/${property.id}
 ''';
     SharingService().shareText(message, subject: 'Homesurge Property');
   }
