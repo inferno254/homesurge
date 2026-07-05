@@ -13,5 +13,9 @@ dist
 .vercel
 
 # Mobile / Flutter artifacts
-mobile/
+# mobile/
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.packages
 
