@@ -40,14 +40,18 @@ class _CustomerLoginScreenState extends ConsumerState<CustomerLoginScreen> {
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
+        if (mounted) context.go('/');
       } else {
         await auth.signUp(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
-      }
-      if (mounted) {
-        context.go('/');
+        if (mounted) {
+          setState(() {
+            _isLogin = true;
+            _err = 'Account created! Please check your email to confirm your account before signing in.';
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -116,7 +120,6 @@ class _CustomerLoginScreenState extends ConsumerState<CustomerLoginScreen> {
     try {
       final auth = ref.read(authProvider.notifier);
       await auth.signInWithGoogle();
-      if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
         final message = e.toString().replaceFirst('Exception: ', '');
