@@ -22,10 +22,6 @@ async function loadOne(id: string): Promise<PublicPropertyRow | null> {
   return fetchPublicProperty(id)
 }
 
-async function loadAll(): Promise<PublicPropertyRow[]> {
-  return fetchPublicProperties()
-}
-
 function formatPrice(p: PublicPropertyRow) {
   const n = Number(p.price)
   const formatted = Number.isFinite(n) ? `KSh ${n.toLocaleString()}` : 'Price on request'

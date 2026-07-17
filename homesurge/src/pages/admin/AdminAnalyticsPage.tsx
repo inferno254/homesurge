@@ -1,6 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
-import { useMemo } from 'react'
 import { Navigate } from 'react-router-dom'
 import { RefreshCw, TrendingUp, Home, Eye, EyeOff, Phone, DollarSign, Activity, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { useToast } from '../../components/Toast'
