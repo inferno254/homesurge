@@ -395,6 +395,9 @@ begin
   elsif tg_op = UPDATE then
     if new.is_published and not old.is_published then action_text := PUBLISH;
     elsif not new.is_published and old.is_published then action_text := UNPUBLISH;
+    elsif not new.is_available and old.is_available then action_text := MARKED_UNAVAILABLE;
+    elsif new.is_available and not old.is_available then action_text := MARKED_AVAILABLE;
+    elsif new.price <> old.price then action_text := PRICE_CHANGE;
     else action_text := UPDATE; end if;
   elsif tg_op = DELETE then action_text := DELETE; end if;
   insert into public.admin_activity_log (admin_id, action, property_id, property_ref, details)

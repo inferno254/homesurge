@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'content-type',
+  'Access-Control-Allow-Origin': process.env.VITE_APP_URL || 'http://localhost:5173',
+  'Access-Control-Allow-Headers': 'content-type, authorization',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
@@ -12,8 +12,8 @@ function json(res: VercelResponse, status: number, body: unknown) {
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*')
-    res.setHeader('Access-Control-Allow-Headers', 'content-type')
+    res.setHeader('Access-Control-Allow-Origin', process.env.VITE_APP_URL || 'http://localhost:5173')
+    res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization')
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
     return res.status(200).end()
   }
