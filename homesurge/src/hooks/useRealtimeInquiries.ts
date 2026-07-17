@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 
+const channelCache = new Set<string>()
+
 export function useRealtimeInquiries() {
   const qc = useQueryClient()
   const [status, setStatus] = useState('connecting')
@@ -17,27 +19,28 @@ export function useRealtimeInquiries() {
   useEffect(() => {
     if (!supabase) { setStatus('error'); return }
     setStatus('connecting')
-    const existing = supabase.getChannels().find((c: any) => c.topic === 'realtime:admin-inquiries-realtime')
-    const ch = existing ?? supabase.channel('admin-inquiries-realtime')
-    if (!existing) {
-      ch.on('postgres_changes',
-        {event:'INSERT',schema:'public',table:'property_inquiries'},
-        (p) => {
-          const incoming = p.new as unknown
-          qc.setQueryData(['admin-inquiries'], (o) => {
-            const prev = (o ?? []) as any[]
-            return [incoming as any, ...prev]
-          })
-        }
-      ).subscribe((s) => {
-        if(s==='SUBSCRIBED') setStatus('connected')
-        else if(s==='CHANNEL_ERROR') setStatus('error')
-        else if(s==='CLOSED') setStatus('disconnected')
-      })
-    } else {
+    const name = 'admin-inquiries-realtime'
+    if (channelCache.has(name)) {
       setStatus('connected')
+      return
     }
-    return () => { if(supabase && !existing) supabase.removeChannel(ch) }
+    channelCache.add(name)
+    const ch = supabase.channel(name)
+    ch.on('postgres_changes',
+      {event:'INSERT',schema:'public',table:'property_inquiries'},
+      (p) => {
+        const incoming = p.new as unknown
+        qc.setQueryData(['admin-inquiries'], (o) => {
+          const prev = (o ?? []) as any[]
+          return [incoming as any, ...prev]
+        })
+      }
+    ).subscribe((s) => {
+      if(s==='SUBSCRIBED') setStatus('connected')
+      else if(s==='CHANNEL_ERROR') setStatus('error')
+      else if(s==='CLOSED') setStatus('disconnected')
+    })
+    return () => { if(supabase) { supabase.removeChannel(ch); channelCache.delete(name) } }
   },[qc])
   return { inquiries, isLoading, status, refetch, count: inquiries.length }
 }
