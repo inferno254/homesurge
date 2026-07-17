@@ -152,6 +152,7 @@ export function AdminMap({ properties, onMarkerHover, activeLayer, onMapReady, v
         <TileLayer
           attribution={activeLayer.attribution}
           url={activeLayer.url}
+          crossOrigin="anonymous"
         />
 
         <MarkerClusterGroup
