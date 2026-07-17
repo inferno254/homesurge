@@ -107,7 +107,6 @@ export function AdminLayout() {
                 </Link>
               ))}
               <div className="flex items-center gap-2 px-3 py-2">
-                <NotificationBell />
                 <span className="text-zinc-500">Inquiries</span>
               </div>
               <button
