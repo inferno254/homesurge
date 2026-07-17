@@ -10,7 +10,7 @@ import {
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
-type Role = 'customer' | 'admin' | 'updater' | null
+type Role = 'customer' | 'admin' | 'publisher' | null
 
 type AuthState = {
   session: Session | null
@@ -23,6 +23,8 @@ type AuthState = {
   signInEmail: (email: string, password: string) => Promise<{ error: Error | null }>
   signUpEmail: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>
   signInEmailCustomer: (email: string, password: string) => Promise<{ error: Error | null }>
+  signInWithGoogle: () => Promise<void>
+  resetPassword: (email: string) => Promise<void>
 }
 
 const AuthCtx = createContext<AuthState | null>(null)
@@ -49,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('id', session.user.id)
         .maybeSingle()
 
-      const r = data?.role === 'admin' ? 'admin' : data?.role === 'updater' ? 'updater' : data?.role === 'customer' ? 'customer' : null
+      const r = data?.role === 'admin' ? 'admin' : data?.role === 'publisher' ? 'publisher' : data?.role === 'customer' ? 'customer' : null
       setRole(r)
       setFullName(data?.full_name ?? null)
     } catch (e) {
@@ -171,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error('Local login is only available in browser') }
       }
 
-// 1. Try real Supabase auth first (for admin + updaters with real accounts)
+// 1. Try real Supabase auth first (for admin + publishers with real accounts)
       if (!supabase) {
         return { error: new Error('Supabase not configured') }
       }
@@ -235,6 +237,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const signInWithGoogle = useCallback(async () => {
+    if (!supabase) {
+      throw new Error('Supabase not configured')
+    }
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/auth/callback',
+      },
+    })
+  }, [])
+
+  const resetPassword = useCallback(async (email: string) => {
+    if (!supabase) {
+      throw new Error('Supabase not configured')
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/auth/reset',
+    })
+    if (error) {
+      throw error
+    }
+  }, [])
 
   const value = useMemo(
     () => ({
@@ -248,8 +273,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInEmail,
       signUpEmail,
       signInEmailCustomer,
+      signInWithGoogle,
+      resetPassword,
     }),
-    [session, user, role, fullName, loading, signOut, refreshRole, signInEmail, signUpEmail, signInEmailCustomer],
+    [session, user, role, fullName, loading, signOut, refreshRole, signInEmail, signUpEmail, signInEmailCustomer, signInWithGoogle, resetPassword],
   )
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>

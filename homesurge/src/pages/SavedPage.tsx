@@ -1,16 +1,22 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Heart, ArrowLeft, Trash2 } from 'lucide-react'
+import { Heart, ArrowLeft, Trash2, GitCompare } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { supabaseConfigured } from '../lib/env'
 import { PropertyCard } from '../components/PropertyCard'
 import { FadeIn } from '../components/FadeIn'
+import { CompareButton } from '../components/CompareButton'
+import { SignInGate } from '../components/SignInGate'
 import { useFavorites } from '../hooks/useFavorites'
+import { useCompare } from '../hooks/useCompare'
+import { useAuth } from '../context/AuthContext'
 import type { PublicPropertyRow } from '../types/property'
 
 export function SavedPage() {
   const configured = supabaseConfigured()
+  const { user, loading: authLoading } = useAuth()
   const { favorites, count, clear } = useFavorites()
+  const { compare, count: compareCount, toggle: toggleCompare } = useCompare()
 
   const q = useQuery({
     queryKey: ['public-properties-all'],
@@ -23,6 +29,20 @@ export function SavedPage() {
   })
 
   const saved = (q.data ?? []).filter((p) => favorites.includes(p.id))
+
+  if (authLoading) {
+    return <div className="mx-auto max-w-7xl px-6 py-20 text-center text-zinc-500">Loading…</div>
+  }
+
+  if (!user) {
+    return (
+      <SignInGate
+        title="Sign in to view your saved homes"
+        subtitle="Create a free account or sign in to keep your saved listings and compare them side by side."
+        redirectTo="/saved"
+      />
+    )
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
@@ -45,20 +65,31 @@ export function SavedPage() {
                   Saved listings
                 </h1>
                 <p className="text-sm text-zinc-500 mt-1">
-                  {count} saved · stored locally in your browser
+                  {count} saved · tap compare to line them up
                 </p>
               </div>
             </div>
           </div>
-          {count > 0 && (
-            <button
-              onClick={clear}
-              className="btn-ghost rounded-xl text-xs"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Clear all
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {compareCount >= 2 && (
+              <Link
+                to="/compare"
+                className="btn-primary rounded-xl text-xs inline-flex items-center gap-1.5"
+              >
+                <GitCompare className="h-3.5 w-3.5" />
+                Compare ({compareCount})
+              </Link>
+            )}
+            {count > 0 && (
+              <button
+                onClick={clear}
+                className="btn-ghost rounded-xl text-xs"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
       </FadeIn>
 
@@ -104,7 +135,16 @@ export function SavedPage() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {saved.map((p, i) => (
               <FadeIn key={p.id} delay={i * 80}>
-                <PropertyCard property={p} />
+                <div className="group relative">
+                  <PropertyCard property={p} />
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <CompareButton
+                      id={p.id}
+                      isSelected={compare.includes(p.id)}
+                      onToggle={toggleCompare}
+                    />
+                  </div>
+                </div>
               </FadeIn>
             ))}
           </div>

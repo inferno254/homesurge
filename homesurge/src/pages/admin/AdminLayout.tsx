@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Map, PlusCircle, Menu, X, Phone, HelpCircle, ScrollText, Users } from 'lucide-react'
+import { LayoutDashboard, Map, PlusCircle, Menu, X, Phone, HelpCircle, ScrollText, Users, BarChart3 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { NotificationBell } from '../../components/admin/NotificationBell'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
@@ -13,26 +13,34 @@ export function AdminLayout() {
 
   useKeyboardShortcuts()
 
-  if (user && role === null) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <p className="text-sm text-zinc-400">Loading...</p>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-trace-cyan" />
       </div>
     )
   }
 
-  if (!loading && role !== 'admin' && role !== 'updater') {
+  if (role !== 'admin' && role !== 'publisher') {
     return <Navigate to="/admin/login" replace />
   }
+
+  const isAdmin = role === 'admin'
 
   const navLinks = [
     { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/admin/map', label: 'Operations map', icon: Map },
     { to: '/admin/inquiries', label: 'Inquiries', icon: Phone },
-    { to: '/admin/activity', label: 'Activity log', icon: ScrollText },
-    { to: '/admin/users', label: 'Users', icon: Users },
     { to: '/admin/new', label: 'Add house', icon: PlusCircle, accent: true },
   ]
+
+  if (isAdmin) {
+    navLinks.push(
+      { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+      { to: '/admin/activity', label: 'Activity log', icon: ScrollText },
+      { to: '/admin/users', label: 'Users', icon: Users },
+    )
+  }
 
   return (
     <div className="min-h-screen bg-trace-dusk text-white">
@@ -41,36 +49,35 @@ export function AdminLayout() {
           <span className="font-display font-bold text-lg tracking-tight shrink-0">
             Home<span className="text-gradient">surge</span> <span className="text-zinc-500 text-sm font-normal">Admin</span>
           </span>
-          <nav className="hidden md:flex flex-wrap gap-4 text-sm text-zinc-400">
+          <nav className="hidden md:flex flex-wrap gap-2 text-sm">
             {navLinks.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
-                className={`inline-flex items-center gap-1.5 hover:text-white transition-colors ${
-                  l.accent ? 'text-cyan-300' : ''
+                className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 transition-all ${
+                  l.accent
+                    ? 'bg-gradient-to-r from-trace-cyan to-trace-violet text-trace-dusk font-semibold shadow-lg shadow-trace-cyan/20 hover:shadow-trace-cyan/30'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
                 }`}
               >
                 <l.icon className="h-4 w-4" /> {l.label}
               </Link>
             ))}
-            <a href="/browse" className="hover:text-white transition-colors">
-              Preview public
-            </a>
           </nav>
-          <div className="hidden md:flex items-center gap-3 ml-auto">
+          <div className="hidden md:flex items-center gap-2 ml-auto">
             <button
               type="button"
               onClick={() => setShowShortcuts(true)}
-              className="text-zinc-500 hover:text-white transition-colors"
+              className="btn-ghost rounded-xl px-3 py-2"
               title="Keyboard shortcuts (?)"
             >
-              <HelpCircle className="h-5 w-5" />
+              <HelpCircle className="h-4 w-4" />
             </button>
             <NotificationBell />
             <button
               type="button"
               onClick={() => signOut()}
-              className="text-xs uppercase tracking-wide text-zinc-500 hover:text-white transition-colors"
+              className="btn-ghost rounded-xl px-3 py-2 text-xs uppercase tracking-wide"
             >
               Sign out
             </button>
@@ -84,26 +91,21 @@ export function AdminLayout() {
         </div>
         {menuOpen && (
           <div className="border-t border-white/10 mt-4 pt-4 md:hidden animate-fade-in">
-            <nav className="flex flex-col gap-2 text-sm text-zinc-400">
+            <nav className="flex flex-col gap-2 text-sm">
               {navLinks.map((l) => (
                 <Link
                   key={l.to}
                   to={l.to}
                   onClick={() => setMenuOpen(false)}
-                  className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-white/5 transition-colors ${
-                    l.accent ? 'text-cyan-300' : ''
+                  className={`inline-flex items-center gap-2 rounded-xl px-3 py-2.5 transition-colors ${
+                    l.accent
+                      ? 'bg-gradient-to-r from-trace-cyan to-trace-violet text-trace-dusk font-semibold'
+                      : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
                   }`}
                 >
                   <l.icon className="h-4 w-4" /> {l.label}
                 </Link>
               ))}
-              <a
-                href="/browse"
-                onClick={() => setMenuOpen(false)}
-                className="inline-flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-white/5 transition-colors"
-              >
-                Preview public listings
-              </a>
               <div className="flex items-center gap-2 px-3 py-2">
                 <NotificationBell />
                 <span className="text-zinc-500">Inquiries</span>
@@ -111,14 +113,14 @@ export function AdminLayout() {
               <button
                 type="button"
                 onClick={() => { setShowShortcuts(true); setMenuOpen(false) }}
-                className="text-left rounded-xl px-3 py-2 text-zinc-500 hover:bg-white/5 transition-colors"
+                className="text-left rounded-xl px-3 py-2.5 text-zinc-500 hover:bg-white/[0.06] transition-colors"
               >
                 Shortcuts
               </button>
               <button
                 type="button"
                 onClick={() => { signOut(); setMenuOpen(false) }}
-                className="text-left rounded-xl px-3 py-2 text-zinc-500 hover:bg-white/5 transition-colors"
+                className="text-left rounded-xl px-3 py-2.5 text-zinc-500 hover:bg-white/[0.06] transition-colors"
               >
                 Sign out
               </button>
@@ -141,16 +143,17 @@ export function AdminLayout() {
               </button>
             </div>
             <div className="space-y-2 text-sm">
-               {[
-                 ['Ctrl+D', 'Go to Dashboard'],
-                 ['Ctrl+M', 'Go to Admin Map'],
-                 ['Ctrl+N', 'New property'],
-                 ['Ctrl+I', 'Go to Inquiries'],
-                 ['Ctrl+A', 'Go to Activity log'],
-                 ['Ctrl+U', 'Go to Users'],
-                 ['Esc', 'Close modals/drawers'],
-                 ['/', 'Focus search (when active)'],
-               ].map(([key, label]) => (
+              {[
+                ['Ctrl+D', 'Go to Dashboard'],
+                ['Ctrl+M', 'Go to Admin Map'],
+                ['Ctrl+N', 'New property'],
+                ['Ctrl+I', 'Go to Inquiries'],
+                ['Ctrl+A', 'Go to Activity log'],
+                ['Ctrl+R', 'Go to Analytics'],
+                ['Ctrl+U', 'Go to Users'],
+                ['Esc', 'Close modals/drawers'],
+                ['/', 'Focus search (when active)'],
+              ].map(([key, label]) => (
                 <div key={key} className="flex items-center justify-between text-zinc-400">
                   <span>{label}</span>
                   <kbd className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-zinc-300 font-mono">{key}</kbd>

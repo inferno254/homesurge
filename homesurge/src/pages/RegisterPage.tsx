@@ -1,5 +1,5 @@
 ﻿import { FormEvent, useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { PropertyShowcase } from '../components/PropertyShowcase'
 
@@ -14,18 +14,17 @@ export function RegisterPage() {
   const [busy, setBusy] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
 
+  const redirect = new URLSearchParams(useLocation().search).get('redirect')
+
   useEffect(() => {
     if (!loading && user) {
-      if (role === 'admin') {
-        navigate('/admin', { replace: true })
-      } else {
-        navigate('/browse', { replace: true })
-      }
+      const dest = redirect || (role === 'admin' || role === 'publisher' ? '/admin' : '/browse')
+      navigate(dest, { replace: true })
     }
-  }, [loading, role, user, navigate])
+  }, [loading, role, user, navigate, redirect])
 
   if (!loading && user) {
-    return <Navigate to={role === 'admin' ? '/admin' : '/browse'} replace />
+    return <Navigate to={redirect || (role === 'admin' || role === 'publisher' ? '/admin' : '/browse')} replace />
   }
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {

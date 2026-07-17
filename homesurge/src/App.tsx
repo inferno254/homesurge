@@ -16,12 +16,121 @@ import { AdminMapPage } from './pages/admin/AdminMapPage'
 import { AdminInquiriesPage } from './pages/admin/AdminInquiriesPage'
 import { AdminPropertyFormPage } from './pages/admin/AdminPropertyFormPage'
 import { AdminActivityPage } from './pages/admin/AdminActivityPage'
+import { AdminAnalyticsPage } from './pages/admin/AdminAnalyticsPage'
 import { AdminUsersPage } from './pages/admin/AdminUsersPage'
 import { CustomerLoginPage } from './pages/CustomerLoginPage'
 import { CustomerDashboard } from './pages/CustomerDashboard'
 import { CompareBar } from './components/CompareBar'
 import { useCompare } from './hooks/useCompare'
-import { CustomerChatWidget } from './components/ai/CustomerChatWidget'
+import { AdminRoute } from './components/AdminRoute'
+import { useAuth } from './context/AuthContext'
+import { useEffect, useState } from 'react'
+
+function EmailConfirmPage() {
+  const [status, setStatus] = useState('Verifying your email...')
+  const [done, setDone] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('token')
+    const type = params.get('type')
+    const error = params.get('error')
+    const errorDescription = params.get('error_description')
+    const next = params.get('next') || '/login?confirmed=1'
+
+    if (error) {
+      setStatus(errorDescription || error || 'Email verification failed')
+      setDone(true)
+      return
+    }
+
+    if (token && type === 'signup') {
+      setStatus('Email confirmed! Redirecting...')
+      setDone(true)
+      setTimeout(() => {
+        window.location.href = next
+      }, 1500)
+    } else if (token && type === 'magiclink') {
+      setStatus('Magic link verified! Redirecting...')
+      setDone(true)
+      setTimeout(() => {
+        window.location.href = next
+      }, 1500)
+    } else {
+      setStatus('Invalid or expired verification link')
+      setDone(true)
+    }
+  }, [])
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-trace-dusk px-4">
+      <div className="text-center">
+        <p className="text-sm text-zinc-400">{status}</p>
+        {done && (
+          <button
+            onClick={() => { window.location.href = '/login' }}
+            className="mt-4 text-xs text-cyan-300 hover:text-cyan-200"
+          >
+            Go to login
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AuthCallback() {
+  const { refreshRole, role, loading, user } = useAuth()
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    const error = params.get('error')
+    const errorDescription = params.get('error_description')
+
+    if (error) {
+      console.error('[AuthCallback] error', error, errorDescription)
+      document.title = 'Sign in failed'
+      return
+    }
+
+    if (!code) {
+      document.title = 'Sign in complete'
+      return
+    }
+
+    if (loading) {
+      document.title = 'Completing sign in...'
+      return
+    }
+
+    if (!user?.id) {
+      document.title = 'Signing you in...'
+      return
+    }
+
+    refreshRole()
+  }, [refreshRole, loading, user?.id])
+
+  useEffect(() => {
+    if (loading) return
+    if (role === 'admin' || role === 'publisher') {
+      window.location.href = '/admin'
+    } else if (role === 'customer') {
+      window.location.href = '/browse'
+    } else {
+      window.location.href = '/'
+    }
+  }, [loading, role])
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-trace-dusk">
+      <div className="text-center">
+        <p className="text-sm text-zinc-400">Completing sign in...</p>
+      </div>
+    </div>
+  )
+}
 
 class RootErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -61,7 +170,6 @@ function PublicShell() {
     <>
       <PublicLayout />
       <CompareBar ids={compare} onRemove={toggle} onClear={clear} />
-      <CustomerChatWidget />
     </>
   )
 }
@@ -84,8 +192,9 @@ export default function App() {
 
             <Route path="/admin/login" element={<AdminLoginPage />} />
 
-            <Route path="/admin" element={<AdminLayout />}>
+            <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
               <Route index element={<AdminDashboardPage />} />
+              <Route path="analytics" element={<AdminAnalyticsPage />} />
               <Route path="map" element={<AdminMapPage />} />
               <Route path="inquiries" element={<AdminInquiriesPage />} />
               <Route path="activity" element={<AdminActivityPage />} />
@@ -95,6 +204,9 @@ export default function App() {
             </Route>
             <Route path="/login" element={<CustomerLoginPage />} />
             <Route path="/register" element={<CustomerLoginPage />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/auth/reset" element={<AuthCallback />} />
+            <Route path="/auth/v1/verify" element={<EmailConfirmPage />} />
             <Route path="/account" element={<CustomerDashboard />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />

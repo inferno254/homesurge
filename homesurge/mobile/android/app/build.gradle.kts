@@ -1,15 +1,12 @@
 plugins {
-    id("com.android.application") version "8.3.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.0" apply false
+    id("com.android.application")
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("dev.flutter.flutter-gradle-plugin")
 }
 
-apply(plugin = "com.android.application")
-apply(plugin = "org.jetbrains.kotlin.android")
-apply(from = "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle")
-
 android {
-    namespace = "com.homesurge.mobile"
-    compileSdk = flutter.compileSdkVersion.toInt()
+    namespace = "com.example.homesurge_mobile"
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -17,19 +14,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    signingConfigs {
-        create("release") {
-            storeFile = file("homesurge-release-key.jks")
-            storePassword = "UFpGAwnJs8ytWCm6q2P91TQ4bM3ujLvr"
-            keyAlias = "homesurge"
-            keyPassword = "cn8opVLBsTMJR9ajFfZG5C3w0IS6gmEx"
-            enableV1Signing = true
-            enableV2Signing = true
-        }
-    }
-
     defaultConfig {
-        applicationId = "com.homesurge.mobile"
+        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        applicationId = "com.example.homesurge_mobile"
+        // You can update the following values to match your application needs.
+        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -38,10 +27,9 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }

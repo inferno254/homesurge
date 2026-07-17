@@ -52,7 +52,7 @@ export function CustomerDashboard() {
 
   const savedProperties = (propertiesQ.data ?? []).filter((p) => favorites.includes(p.id))
 
-  if (role === 'admin' || role === 'updater') {
+  if (role === 'admin' || role === 'publisher') {
     return <Navigate to="/admin" replace />
   }
 

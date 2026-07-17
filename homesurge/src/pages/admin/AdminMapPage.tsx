@@ -618,7 +618,7 @@ export function AdminMapPage() {
                       className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-zinc-200"
                       id="reg-type"
                     >
-                      {['apartment', 'bedsitter', 'bungalow', 'maisonette', 'studio', 'townhouse', 'land', 'commercial'].map(t => (
+                      {['apartment', 'bedsitter', 'bungalow', 'maisonette', 'studio', 'townhouse', 'bnb', 'land', 'commercial'].map(t => (
                         <option key={t} value={t}>{t}</option>
                       ))}
                     </select>

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Bath, Bed, Building2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
+import { shouldShowBathrooms } from '../lib/helpers'
 import type { PublicPropertyRow } from '../types/property'
 
 type Props = { property: PublicPropertyRow }
@@ -103,7 +104,7 @@ export function PropertyCard({ property: p }: Props) {
               <span className="text-zinc-300">{p.bedrooms} bedroom{p.bedrooms !== 1 ? 's' : ''}</span>
             </span>
           )}
-          {p.bathrooms != null && (
+          {shouldShowBathrooms(p.bedrooms, p.property_type) && p.bathrooms != null && (
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.04] px-2.5 py-1.5">
               <Bath className="h-3.5 w-3.5 text-trace-violet" />
               <span className="text-zinc-300">{p.bathrooms} bathroom{p.bathrooms !== 1 ? 's' : ''}</span>

@@ -124,7 +124,7 @@ export async function aiParseListing(rawText: string): Promise<ParsedListing> {
     // fallback
   }
 
-  const prompt = `Extract property listing details from this raw Kenyan real-estate text. Return ONLY valid JSON with these exact keys: title, price (number), price_type ("monthly"|"sale"|"negotiable"), bedrooms (number or null), bathrooms (number or null), property_type ("apartment"|"bedsitter"|"bungalow"|"maisonette"|"studio"|"townhouse"|"land"|"commercial"), county, town, area_label, estate, address, owner_phone, description, amenities (array of strings), furnished (boolean). If a field is missing, use null or empty string. Do NOT invent values. Text: "${rawText.slice(0, 4000)}"`
+  const prompt = `Extract property listing details from this raw Kenyan real-estate text. Return ONLY valid JSON with these exact keys: title, price (number), price_type ("monthly"|"sale"|"negotiable"), bedrooms (number or null), bathrooms (number or null), property_type ("apartment"|"bedsitter"|"bungalow"|"maisonette"|"studio"|"townhouse"|"bnb"|"land"|"commercial"), county, town, area_label, estate, address, owner_phone, description, amenities (array of strings), furnished (boolean). If a field is missing, use null or empty string. Do NOT invent values. Text: "${rawText.slice(0, 4000)}"`
   const text = await withTimeout(geminiGenerate(prompt, 'You are a strict JSON extraction engine for Kenyan real estate. Output ONLY valid JSON, no markdown, no commentary.'))
   const cleaned = text.replace(/```json?\n?/gi, '').replace(/```/g, '').trim()
   return JSON.parse(cleaned)

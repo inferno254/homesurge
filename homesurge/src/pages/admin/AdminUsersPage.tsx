@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
 import { Shield, UserCheck, UserX } from 'lucide-react'
+import { Navigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 
 type ProfileUser = {
   id: string
@@ -28,23 +30,16 @@ async function fetchUsers(): Promise<ProfileUser[]> {
 
   const { data: profiles, error } = await supabase
     .from('profiles')
-    .select('id, role, created_at, full_name')
+    .select('id, role, created_at, full_name, email')
     .order('created_at', { ascending: false })
 
   if (error) throw error
 
   const out: ProfileUser[] = []
   for (const p of (profiles ?? [])) {
-    let email = `user-${(p.id as string).slice(0, 8)}@no-email.com`
-    try {
-      const { data: authUser } = await supabase.auth.admin.getUserById(p.id as string)
-      if (authUser?.user?.email) email = authUser.user.email
-    } catch {
-      // service role may not be available in all contexts
-    }
     out.push({
       id: p.id as string,
-      email,
+      email: (p.email as string) || `user-${(p.id as string).slice(0, 8)}@no-email.com`,
       role: p.role ?? 'customer',
       created_at: p.created_at as string,
       full_name: p.full_name ?? undefined,
@@ -54,8 +49,13 @@ async function fetchUsers(): Promise<ProfileUser[]> {
 }
 
 export function AdminUsersPage() {
+  const { role } = useAuth()
   const q = useQuery({ queryKey: ['admin-users'], queryFn: fetchUsers })
   const { toast } = useToast()
+
+  if (role !== 'admin') {
+    return <Navigate to="/admin" replace />
+  }
 
   const updateRole = async (userId: string, newRole: string) => {
     if (!supabase) return
@@ -76,7 +76,7 @@ export function AdminUsersPage() {
       <div>
         <h1 className="font-display text-2xl font-bold text-white">Users & roles</h1>
         <p className="text-sm text-zinc-500 mt-2">
-          Manage who can access the admin panel. Updaters can edit listings, admins have full access.
+          Manage who can access the admin panel. Publishers can edit listings, admins have full access.
         </p>
       </div>
 
@@ -105,11 +105,11 @@ export function AdminUsersPage() {
                   <td className="p-4">
                     <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-semibold ${
                       u.role === 'admin' ? 'bg-violet-400/10 text-violet-300 border border-violet-400/20' :
-                      u.role === 'updater' ? 'bg-cyan-400/10 text-cyan-300 border border-cyan-400/20' :
+                       u.role === 'publisher' ? 'bg-cyan-400/10 text-cyan-300 border border-cyan-400/20' :
                       'bg-white/5 text-zinc-400 border border-white/10'
                     }`}>
                       {u.role === 'admin' && <Shield className="h-3 w-3" />}
-                      {u.role === 'updater' && <UserCheck className="h-3 w-3" />}
+                      {u.role === 'publisher' && <UserCheck className="h-3 w-3" />}
                       {u.role}
                     </span>
                   </td>
@@ -124,7 +124,7 @@ export function AdminUsersPage() {
                         className="rounded-lg border border-white/[0.1] bg-black/30 px-3 py-1.5 text-xs text-white"
                       >
                         <option value="customer">Customer</option>
-                        <option value="updater">Updater</option>
+                        <option value="publisher">Publisher</option>
                         <option value="admin">Admin</option>
                       </select>
                     </div>
@@ -156,7 +156,7 @@ export function AdminUsersPage() {
           <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
             <div className="flex items-center gap-2 mb-2">
               <UserCheck className="h-4 w-4 text-cyan-400" />
-              <span className="text-xs font-semibold text-cyan-300">Updater</span>
+               <span className="text-xs font-semibold text-cyan-300">Publisher</span>
             </div>
             <p className="text-[11px] text-zinc-500">Can add and edit listings on the admin map and dashboard. Cannot manage users or delete.</p>
           </div>

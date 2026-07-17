@@ -1,6 +1,8 @@
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, MapPin, Crosshair, Navigation } from 'lucide-react'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { supabase } from '../../lib/supabase'
 import { generateHouseDescription } from '../../lib/gemini'
 import { useToast } from '../../components/Toast'
@@ -8,6 +10,7 @@ import { AIListingParser } from '../../components/admin/ai/AIListingParser'
 import { AIImageGate } from '../../components/admin/ai/AIImageGate'
 import { AIGeocodeHelper } from '../../components/admin/ai/AIGeocodeHelper'
 import { useQueryClient } from '@tanstack/react-query'
+import { shouldShowBathrooms } from '../../lib/helpers'
 
 const AMENITIES = ['WiFi', 'Parking', 'Water 24/7', 'Electricity', 'Security', 'CCTV', 'Gym', 'Backup Generator', 'Balcony', 'Rooftop', 'Free water']
 
@@ -145,6 +148,12 @@ export function AdminPropertyFormPage() {
   const [files, setFiles] = useState<FileList | null>(null)
   const [aiText, setAiText] = useState('')
   const [existingImages, setExistingImages] = useState<string[]>([])
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [detectingLocation, setDetectingLocation] = useState(false)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
+  const leafletMapRef = useRef<L.Map | null>(null)
+  const currentMarkerRef = useRef<L.CircleMarker | null>(null)
+  const pickedMarkerRef = useRef<L.Marker | null>(null)
 
   useEffect(() => {
     if (!id || !supabase) return
@@ -195,6 +204,189 @@ export function AdminPropertyFormPage() {
       setLoadingData(false)
     })()
   }, [id, navigate, toast])
+
+  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+        headers: { 'User-Agent': 'homesurge-web/1.0' },
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      const addr = data.address as Record<string, string> | undefined
+      if (!addr) return null
+      const county = addr.state || addr.county || addr.region || ''
+      const town = addr.city || addr.town || addr.municipality || addr.village || ''
+      const road = addr.road || ''
+      const houseNumber = addr.house_number || ''
+      const suburb = addr.suburb || addr.neighbourhood || ''
+      const fullAddress = [houseNumber, road, suburb, town, county].filter(Boolean).join(', ')
+      return { county, town, fullAddress, display: [road, suburb, town, county].filter(Boolean).join(', ') }
+    } catch {
+      return null
+    }
+  }, [])
+
+  const autoDetectLocation = useCallback(async (map?: L.Map | null) => {
+    if (!navigator.geolocation) {
+      toast('Geolocation not supported by your browser', 'error')
+      return
+    }
+    setDetectingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        const geo = await reverseGeocode(lat, lng)
+
+        const confirmed = window.confirm(
+          geo?.display
+            ? `Is this your current location?\n\n${geo.display}`
+            : `Is this your current location?\n\n${lat.toFixed(6)}, ${lng.toFixed(6)}`
+        )
+
+        if (confirmed) {
+          setCurrentLocation({ lat, lng })
+          setForm((f) => ({
+            ...f,
+            latitude: String(lat),
+            longitude: String(lng),
+            ...(geo ? { county: geo.county, town: geo.town, address: geo.fullAddress } : {}),
+          }))
+          if (map) {
+            map.setView([lat, lng], 16)
+            if (pickedMarkerRef.current) {
+              pickedMarkerRef.current.setLatLng([lat, lng])
+            } else {
+              pickedMarkerRef.current = L.marker([lat, lng], {
+                icon: L.icon({
+                  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+                  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+                  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                  iconSize: [25, 41],
+                  iconAnchor: [12, 41],
+                  popupAnchor: [1, -34],
+                  shadowSize: [41, 41],
+                }),
+              }).addTo(map)
+            }
+            if (currentMarkerRef.current) {
+              currentMarkerRef.current.setLatLng([lat, lng])
+            } else {
+              currentMarkerRef.current = L.circleMarker([lat, lng], {
+                radius: 8,
+                fillColor: '#3B82F6',
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8,
+              }).addTo(map)
+            }
+          }
+        }
+        setDetectingLocation(false)
+      },
+      (err) => {
+        console.warn('Geolocation error:', err)
+        setDetectingLocation(false)
+        toast('Location access denied or unavailable. Pin the location manually on the map.', 'error')
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    )
+  }, [reverseGeocode, toast])
+
+  const handleDetectLocation = useCallback(() => {
+    autoDetectLocation(leafletMapRef.current)
+  }, [autoDetectLocation])
+
+  useEffect(() => {
+    if (!mapContainerRef.current || leafletMapRef.current) return
+
+    const map = L.map(mapContainerRef.current, {
+      center: form.latitude && form.longitude ? [Number(form.latitude), Number(form.longitude)] : [-1.286389, 36.817223],
+      zoom: form.latitude && form.longitude ? 16 : 12,
+    })
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap',
+    }).addTo(map)
+    leafletMapRef.current = map
+
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      const { lat, lng } = e.latlng
+      setForm((f) => ({ ...f, latitude: String(lat), longitude: String(lng) }))
+      if (pickedMarkerRef.current) {
+        pickedMarkerRef.current.setLatLng([lat, lng])
+      } else {
+        pickedMarkerRef.current = L.marker([lat, lng], {
+          icon: L.icon({
+            iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+            iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41],
+          }),
+        }).addTo(map)
+      }
+    })
+
+    if (form.latitude && form.longitude) {
+      pickedMarkerRef.current = L.marker([Number(form.latitude), Number(form.longitude)], {
+        icon: L.icon({
+          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41],
+        }),
+      }).addTo(map)
+    }
+
+    if (!isEdit) {
+      autoDetectLocation(map)
+    }
+
+    return () => {
+      map.remove()
+      leafletMapRef.current = null
+      currentMarkerRef.current = null
+      pickedMarkerRef.current = null
+    }
+  }, [isEdit, autoDetectLocation])
+
+  useEffect(() => {
+    if (!currentLocation || !leafletMapRef.current) return
+    if (currentMarkerRef.current) {
+      currentMarkerRef.current.setLatLng([currentLocation.lat, currentLocation.lng])
+    } else {
+      currentMarkerRef.current = L.circleMarker([currentLocation.lat, currentLocation.lng], {
+        radius: 8,
+        fillColor: '#3B82F6',
+        color: '#fff',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.8,
+      }).addTo(leafletMapRef.current)
+    }
+  }, [currentLocation])
+
+  useEffect(() => {
+    if (!currentLocation || !leafletMapRef.current) return
+    if (currentMarkerRef.current) {
+      currentMarkerRef.current.setLatLng([currentLocation.lat, currentLocation.lng])
+    } else {
+      currentMarkerRef.current = L.circleMarker([currentLocation.lat, currentLocation.lng], {
+        radius: 8,
+        fillColor: '#3B82F6',
+        color: '#fff',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.8,
+      }).addTo(leafletMapRef.current)
+    }
+  }, [currentLocation])
 
   const toggleAmenity = (a: string) => {
     setForm((f) => ({
@@ -400,21 +592,26 @@ export function AdminPropertyFormPage() {
             value={form.bedrooms}
             onChange={(e) => setForm({ ...form, bedrooms: e.target.value })}
           />
-          <input
-            className="input-ht"
-            placeholder="Bathrooms"
-            type="number"
-            value={form.bathrooms}
-            onChange={(e) => setForm({ ...form, bathrooms: e.target.value })}
-          />
+          {shouldShowBathrooms(form.bedrooms ? Number(form.bedrooms) : null, form.property_type) && (
+            <input
+              className="input-ht"
+              placeholder="Bathrooms"
+              type="number"
+              value={form.bathrooms}
+              onChange={(e) => setForm({ ...form, bathrooms: e.target.value })}
+            />
+          )}
         </div>
 
         <select
           className="input-ht capitalize"
           value={form.property_type}
-          onChange={(e) => setForm({ ...form, property_type: e.target.value })}
+          onChange={(e) => {
+            const val = e.target.value
+            setForm({ ...form, property_type: val, ...(shouldShowBathrooms(form.bedrooms ? Number(form.bedrooms) : null, val) ? {} : { bathrooms: '' }) })
+          }}
         >
-          {['apartment', 'bedsitter', 'bungalow', 'maisonette', 'studio', 'townhouse', 'land', 'commercial'].map((t) => (
+          {['apartment', 'bedsitter', 'bungalow', 'maisonette', 'studio', 'townhouse', 'bnb', 'land', 'commercial'].map((t) => (
             <option key={t} value={t}>
               {t}
             </option>
@@ -485,24 +682,47 @@ export function AdminPropertyFormPage() {
             value={form.address}
             onChange={(e) => setForm({ ...form, address: e.target.value })}
           />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <input
-              className="input-ht bg-black/35"
-              placeholder="Latitude"
-              type="number"
-              step="any"
-              value={form.latitude}
-              onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-            />
-            <input
-              className="input-ht bg-black/35"
-              placeholder="Longitude"
-              type="number"
-              step="any"
-              value={form.longitude}
-              onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-            />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleDetectLocation}
+              disabled={detectingLocation}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/40 bg-cyan-500/10 px-3 py-1.5 text-xs text-cyan-100 hover:bg-cyan-500/20 transition-colors disabled:opacity-50"
+            >
+              <Navigation className="h-3.5 w-3.5" />
+              {detectingLocation ? 'Detecting...' : 'Use my current location'}
+            </button>
+            {currentLocation && (
+              <span className="text-[11px] text-zinc-500">
+                Blue dot = your position. Click map to pin property.
+              </span>
+            )}
           </div>
+          <div
+            ref={mapContainerRef}
+            className="h-[220px] w-full rounded-lg border border-white/10 overflow-hidden"
+          />
+        <div className={`grid gap-4 ${shouldShowBathrooms(form.bedrooms ? Number(form.bedrooms) : null, form.property_type) ? 'sm:grid-cols-2' : 'sm:grid-cols-1'}`}>
+          <input
+            className="input-ht"
+            placeholder="Bedrooms"
+            type="number"
+            value={form.bedrooms}
+            onChange={(e) => {
+              const val = e.target.value
+              setForm({ ...form, bedrooms: val, ...(shouldShowBathrooms(val ? Number(val) : null, form.property_type) ? {} : { bathrooms: '' }) })
+            }}
+          />
+          {shouldShowBathrooms(form.bedrooms ? Number(form.bedrooms) : null, form.property_type) && (
+            <input
+              className="input-ht"
+              placeholder="Bathrooms"
+              type="number"
+              value={form.bathrooms}
+              onChange={(e) => setForm({ ...form, bathrooms: e.target.value })}
+            />
+          )}
+        </div>
           <AIGeocodeHelper
             onSelect={(r) => setForm({ ...form, latitude: String(r.lat), longitude: String(r.lng) })}
             currentValue={[form.estate, form.address, form.area_label, form.town].filter(Boolean).join(', ')}

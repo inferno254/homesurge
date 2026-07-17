@@ -1,4 +1,6 @@
 import { GitCompare, Check } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import { useFavorites } from '../hooks/useFavorites'
 
 type Props = {
   id: string
@@ -7,15 +9,30 @@ type Props = {
 }
 
 export function CompareButton({ id, isSelected, onToggle }: Props) {
+  const { user } = useAuth()
+  const { isFavorite } = useFavorites()
+  const saved = isFavorite(id)
+
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    if (!user) {
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`
+      return
+    }
+    if (!saved) {
+      return
+    }
     const result = onToggle(id)
     if (result === 'limit') {
       const el = document.getElementById('compare-bar')
       el?.classList.add('ring-2', 'ring-amber-400/50')
       setTimeout(() => el?.classList.remove('ring-2', 'ring-amber-400/50'), 1200)
     }
+  }
+
+  if (!saved) {
+    return null
   }
 
   return (

@@ -3,6 +3,11 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    watch: {
+      ignored: ['**/mobile/build/**']
+    }
+  },
   build: {
     chunkSizeWarningLimit: 5000,
     commonjsOptions: { include: /node_modules/ },

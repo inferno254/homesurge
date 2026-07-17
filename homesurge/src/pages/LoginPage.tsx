@@ -8,7 +8,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const query = new URLSearchParams(location.search)
   const adminMode = query.get('admin') === '1'
-  const { signInEmail, loading, role, user } = useAuth()
+  const { signInEmail, signInWithGoogle, resetPassword, loading, role, user } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -16,11 +16,11 @@ export function LoginPage() {
 
   useEffect(() => {
     if (!loading && user && role) {
-      if (adminMode && role === 'admin') {
+      if (adminMode && (role === 'admin' || role === 'publisher')) {
         navigate('/admin', { replace: true })
       } else if (adminMode) {
         navigate('/', { replace: true })
-      } else if (role === 'admin') {
+      } else if (role === 'admin' || role === 'publisher') {
         navigate('/admin', { replace: true })
       } else {
         navigate('/browse', { replace: true })
@@ -28,11 +28,11 @@ export function LoginPage() {
     }
   }, [adminMode, loading, role, user, navigate])
 
-  if (!loading && role === 'admin' && user && !adminMode) {
+  if (!loading && (role === 'admin' || role === 'publisher') && user && !adminMode) {
     return <Navigate to="/admin" replace />
   }
 
-  if (!loading && user && !adminMode && role && role !== 'admin') {
+  if (!loading && user && !adminMode && role && role !== 'admin' && role !== 'publisher') {
     return <Navigate to="/browse" replace />
   }
 
@@ -59,6 +59,34 @@ export function LoginPage() {
     if (authError) {
       setError(authError.message)
       return
+    }
+  }
+
+  const onForgotPassword = async () => {
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter your email address first')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      await resetPassword(email.trim())
+      setError('Password reset link sent to your email')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to send reset link')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const onGoogleSignIn = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await signInWithGoogle()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Google sign in failed')
+      setBusy(false)
     }
   }
 
@@ -97,6 +125,16 @@ export function LoginPage() {
               />
             </div>
             {error && <p className="text-xs text-red-400">{error}</p>}
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                disabled={busy}
+                className="text-xs text-cyan-300 hover:text-cyan-200 disabled:opacity-50"
+              >
+                Forgot password?
+              </button>
+            </div>
             <button
               type="submit"
               disabled={busy}
@@ -105,6 +143,15 @@ export function LoginPage() {
               {busy ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
+          <div className="mt-4">
+            <button
+              onClick={onGoogleSignIn}
+              disabled={busy}
+              className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-50"
+            >
+              Continue with Google
+            </button>
+          </div>
           <p className="mt-6 text-xs text-zinc-600 leading-relaxed">
             {adminMode
               ? 'Use your admin account to manage listings, inquiries, and the operations map.'
@@ -114,7 +161,7 @@ export function LoginPage() {
             {!adminMode ? (
               <>
                 <p>
-                  Need admin access? <Link to="/admin/login" className="text-cyan-300 hover:underline">Admin sign in</Link>
+                  Need admin access? <Link to="/login?admin=1" className="text-cyan-300 hover:underline">Admin sign in</Link>
                 </p>
                 <p>
                   New here? <Link to="/register" className="text-cyan-300 hover:underline">Create an account</Link>

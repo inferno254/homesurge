@@ -6,7 +6,6 @@ import { PropertyCard } from '../components/PropertyCard'
 import { FadeIn } from '../components/FadeIn'
 import { SaveButton } from '../components/SaveButton'
 import { CompareButton } from '../components/CompareButton'
-import { AreaInsights } from '../components/AreaInsights'
 import { useFavorites } from '../hooks/useFavorites'
 import { useCompare } from '../hooks/useCompare'
 import { fetchPublicProperties } from '../lib/supabaseApi'
@@ -210,7 +209,7 @@ export function BrowsePage() {
               onChange={(e) => { setType(e.target.value); resetPage() }}
             >
               <option value="">All property types</option>
-              {['apartment', 'bedsitter', 'bungalow', 'maisonette', 'studio', 'townhouse', 'land', 'commercial'].map((t) => (
+              {['apartment', 'bedsitter', 'bungalow', 'maisonette', 'studio', 'townhouse', 'bnb', 'land', 'commercial'].map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
@@ -265,22 +264,9 @@ export function BrowsePage() {
 
       {configured && (
         <>
-          <div className="grid gap-6 lg:grid-cols-4">
-            {/* Sidebar insights */}
-            <div className="lg:col-span-1">
-              {query.data && query.data.length > 0 && (
-                <FadeIn>
-                  <AreaInsights
-                    properties={query.data}
-                    targetCounty={county || undefined}
-                    targetTown={qText || undefined}
-                  />
-                </FadeIn>
-              )}
-            </div>
-
+          <div className="grid gap-6 lg:grid-cols-1">
             {/* Listings grid */}
-            <div className="lg:col-span-3">
+            <div>
               {query.isLoading && (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
                   {Array.from({ length: 6 }).map((_, i) => (

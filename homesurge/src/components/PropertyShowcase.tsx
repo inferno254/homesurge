@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 const properties = [
   { id: 1, color: 'cyan' },
   { id: 2, color: 'violet' },
-  { id: 3, color: 'amber' },
 ]
 
 export function PropertyShowcase() {

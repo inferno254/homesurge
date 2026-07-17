@@ -1,10 +1,10 @@
 ﻿import { FormEvent, useState } from 'react'
-import { Navigate, Link } from 'react-router-dom'
+import { Navigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { User, ArrowLeft } from 'lucide-react'
 
 export function CustomerLoginPage() {
-  const { signInEmailCustomer, signUpEmail, loading, role } = useAuth()
+  const { signInEmailCustomer, signUpEmail, signInWithGoogle, resetPassword, loading, role } = useAuth()
   const [isLogin, setIsLogin] = useState(true)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -12,12 +12,11 @@ export function CustomerLoginPage() {
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  if (!loading && role === 'admin') {
-    return <Navigate to="/admin" replace />
-  }
+  const redirect = new URLSearchParams(useLocation().search).get('redirect')
 
-  if (!loading && role === 'customer') {
-    return <Navigate to="/account" replace />
+  if (!loading && role) {
+    const dest = redirect || (role === 'admin' || role === 'publisher' ? '/admin' : '/account')
+    return <Navigate to={dest} replace />
   }
 
   const onSubmit = async (e: FormEvent) => {
@@ -30,11 +29,44 @@ export function CustomerLoginPage() {
         if (error) setErr(error.message)
       } else {
         const { error } = await signUpEmail(email.trim(), password, name.trim())
-        if (error) setErr(error.message)
+        if (error) {
+          setErr(error.message)
+        } else {
+          setErr('Account created! Please check your email to confirm your account before signing in.')
+          setIsLogin(true)
+        }
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
+      setBusy(false)
+    }
+  }
+
+  const onForgotPassword = async () => {
+    if (!email.trim() || !email.includes('@')) {
+      setErr('Please enter your email address first')
+      return
+    }
+    setBusy(true)
+    setErr(null)
+    try {
+      await resetPassword(email.trim())
+      setErr('Password reset link sent to your email')
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to send reset link')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const onGoogleSignIn = async () => {
+    setBusy(true)
+    setErr(null)
+    try {
+      await signInWithGoogle()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Google sign in failed')
       setBusy(false)
     }
   }
@@ -112,6 +144,18 @@ export function CustomerLoginPage() {
                 {err}
               </div>
             )}
+            {isLogin && (
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={onForgotPassword}
+                  disabled={busy}
+                  className="text-xs text-cyan-300 hover:text-cyan-200 disabled:opacity-50"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
             <button
               type="submit"
               disabled={busy}
@@ -120,6 +164,16 @@ export function CustomerLoginPage() {
               {busy ? 'Please wait...' : isLogin ? 'Sign in' : 'Create account'}
             </button>
           </form>
+
+          <div className="mt-4">
+            <button
+              onClick={onGoogleSignIn}
+              disabled={busy}
+              className="w-full rounded-2xl border border-white/10 bg-white/5 py-3.5 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-50"
+            >
+              Continue with Google
+            </button>
+          </div>
 
           <div className="mt-6 pt-6 border-t border-white/[0.06]">
             <button

@@ -32,7 +32,7 @@ export type DbProperty = {
   price_type: 'monthly' | 'sale' | 'negotiable'
   bedrooms: number | null
   bathrooms: number | null
-  property_type: 'apartment' | 'bedsitter' | 'bungalow' | 'maisonette' | 'studio' | 'townhouse' | 'land' | 'commercial' | string
+  property_type: 'apartment' | 'bedsitter' | 'bungalow' | 'maisonette' | 'studio' | 'townhouse' | 'bnb' | 'land' | 'commercial' | string
   furnished: boolean
   size_sqm: number | null
   county: string | null

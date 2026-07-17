@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { RefreshCw, ChevronDown, ChevronUp, Filter } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
 
 type ActivityEntry = {
   id: string
@@ -20,15 +22,23 @@ const ACTION_COLORS: Record<string, string> = {
   PUBLISH: 'bg-blue-500/15 text-blue-300 border-blue-400/30',
   UNPUBLISH: 'bg-amber-500/15 text-amber-300 border-amber-400/30',
   DELETE: 'bg-red-500/15 text-red-300 border-red-400/30',
+  MARKED_UNAVAILABLE: 'bg-rose-500/15 text-rose-300 border-rose-400/30',
+  MARKED_AVAILABLE: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30',
+  PRICE_CHANGE: 'bg-violet-500/15 text-violet-300 border-violet-400/30',
 }
 
 const PAGE_SIZE = 30
 
 export function AdminActivityPage() {
+  const { role } = useAuth()
   const [page, setPage] = useState(0)
   const [actionFilter, setActionFilter] = useState<string>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [totalCount, setTotalCount] = useState<number>(0)
+
+  if (role !== 'admin') {
+    return <Navigate to="/admin" replace />
+  }
 
   const { data: entries = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-activity', page, actionFilter],
@@ -94,7 +104,7 @@ export function AdminActivityPage() {
         >
           All
         </button>
-        {['CREATE', 'UPDATE', 'PUBLISH', 'UNPUBLISH', 'DELETE'].map((action) => (
+        {['CREATE', 'UPDATE', 'PUBLISH', 'UNPUBLISH', 'DELETE', 'MARKED_UNAVAILABLE', 'MARKED_AVAILABLE', 'PRICE_CHANGE'].map((action) => (
           <button
             key={action}
             type="button"

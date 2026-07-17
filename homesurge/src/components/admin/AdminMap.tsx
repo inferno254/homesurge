@@ -8,6 +8,7 @@ import type { DbProperty } from '../../types/property'
 import { useNavigate } from 'react-router-dom'
 import { Edit, Phone, MapPin, AlertTriangle, CheckCircle2, Copy } from 'lucide-react'
 import { timeAgo } from '../../lib/timeAgo'
+import { shouldShowBathrooms } from '../../lib/helpers'
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -239,12 +240,12 @@ export function AdminMap({ properties, onMarkerHover, activeLayer, onMapReady, v
                       <MapPin className="h-3 w-3" />
                       {[p.estate, p.town, p.county].filter(Boolean).join(' • ')}
                     </div>
-                    <div className="flex gap-3 text-xs text-zinc-500 mt-1">
-                      {p.bedrooms != null && <span>{p.bedrooms} bed</span>}
-                      {p.bathrooms != null && <span>{p.bathrooms} bath</span>}
-                      {p.size_sqm != null && <span>{p.size_sqm}m²</span>}
-                      {p.property_type && <span className="capitalize">{p.property_type}</span>}
-                    </div>
+                     <div className="flex gap-3 text-xs text-zinc-500 mt-1">
+                       {p.bedrooms != null && <span>{p.bedrooms} bed</span>}
+                       {shouldShowBathrooms(p.bedrooms, p.property_type) && p.bathrooms != null && <span>{p.bathrooms} bath</span>}
+                       {p.size_sqm != null && <span>{p.size_sqm}m²</span>}
+                       {p.property_type && <span className="capitalize">{p.property_type}</span>}
+                     </div>
                     {duplicates.length > 0 && (
                       <div className="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-400/20">
                         <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-300 uppercase tracking-wider mb-1">
@@ -356,12 +357,12 @@ export function AdminMap({ properties, onMarkerHover, activeLayer, onMapReady, v
               {[selectedProperty.estate, selectedProperty.town, selectedProperty.county].filter(Boolean).join(' • ')}
             </div>
 
-            <div className="flex gap-3 text-xs text-zinc-500">
-              {selectedProperty.bedrooms != null && <span>{selectedProperty.bedrooms} bed</span>}
-              {selectedProperty.bathrooms != null && <span>{selectedProperty.bathrooms} bath</span>}
-              {selectedProperty.size_sqm != null && <span>{selectedProperty.size_sqm}m²</span>}
-              {selectedProperty.property_type && <span className="capitalize">{selectedProperty.property_type}</span>}
-            </div>
+             <div className="flex gap-3 text-xs text-zinc-500">
+               {selectedProperty.bedrooms != null && <span>{selectedProperty.bedrooms} bed</span>}
+               {shouldShowBathrooms(selectedProperty.bedrooms, selectedProperty.property_type) && selectedProperty.bathrooms != null && <span>{selectedProperty.bathrooms} bath</span>}
+               {selectedProperty.size_sqm != null && <span>{selectedProperty.size_sqm}m²</span>}
+               {selectedProperty.property_type && <span className="capitalize">{selectedProperty.property_type}</span>}
+             </div>
 
             <div className="flex gap-2 pt-1">
               <button

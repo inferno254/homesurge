@@ -27,13 +27,11 @@ function FloatingHouses() {
 }
 
 export function AdminLoginPage() {
-  const { signInEmail, loading, role, user } = useAuth()
+  const { signInEmail, signInWithGoogle, resetPassword, loading, role, user } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-
-  console.log('[AdminLoginPage] render', { loading, role, user: user ? 'set' : 'null' })
 
   if (!loading && role === 'admin' && user) {
     return <Navigate to="/admin" replace />
@@ -64,13 +62,52 @@ export function AdminLoginPage() {
       const { error } = await signInEmail(email.trim(), password)
       setBusy(false)
       if (error) {
-        setErr(error.message)
+        const msg = error.message || ''
+        if (msg.toLowerCase().includes('invalid login credentials') || msg.toLowerCase().includes('wrong password')) {
+          setErr('Invalid email or password. Please check your credentials and try again.')
+        } else if (msg.toLowerCase().includes('email not confirmed')) {
+          setErr('Please confirm your email before signing in. Check your inbox for the confirmation link.')
+        } else if (msg.toLowerCase().includes('too many requests')) {
+          setErr('Too many sign-in attempts. Please wait a moment and try again.')
+        } else if (msg) {
+          setErr(msg)
+        } else {
+          setErr('Invalid email or password')
+        }
         return
       }
     } catch (e) {
       console.error('[AdminLoginPage] submit threw', e)
       setBusy(false)
       setErr(e instanceof Error ? e.message : 'Sign in failed')
+    }
+  }
+
+  const onForgotPassword = async () => {
+    if (!email.trim() || !email.includes('@')) {
+      setErr('Please enter your email address first')
+      return
+    }
+    setBusy(true)
+    setErr(null)
+    try {
+      await resetPassword(email.trim())
+      setErr('Password reset link sent to your email')
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to send reset link')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const onGoogleSignIn = async () => {
+    setBusy(true)
+    setErr(null)
+    try {
+      await signInWithGoogle()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Google sign in failed')
+      setBusy(false)
     }
   }
 
@@ -133,6 +170,16 @@ export function AdminLoginPage() {
                 {err}
               </div>
             )}
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                disabled={busy}
+                className="text-xs text-cyan-300 hover:text-cyan-200 disabled:opacity-50"
+              >
+                Forgot password?
+              </button>
+            </div>
             <button
               type="submit"
               disabled={busy}
@@ -142,9 +189,19 @@ export function AdminLoginPage() {
             </button>
           </form>
 
+          <div className="mt-4">
+            <button
+              onClick={onGoogleSignIn}
+              disabled={busy}
+              className="w-full rounded-2xl border border-white/10 bg-white/5 py-3.5 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-50"
+            >
+              Continue with Google
+            </button>
+          </div>
+
           <div className="mt-8 pt-6 border-t border-white/[0.06]">
             <p className="text-xs text-zinc-600 leading-relaxed">
-              Sign in with your Supabase admin account. To create or promote a user, open the Supabase Dashboard and set their profile role to <code className="text-zinc-400 bg-white/[0.04] px-1.5 py-0.5 rounded">admin</code>.
+              Restricted access. Only authorized administrators may sign in.
             </p>
           </div>
         </div>

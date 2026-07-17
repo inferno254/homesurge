@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
+import { shouldShowBathrooms } from '../../lib/helpers'
+import { useAuth } from '../../context/AuthContext'
 import type { DbProperty, ListingQuality } from '../../types/property'
 
 type SortKey = keyof DbProperty | 'quality'
@@ -134,7 +136,9 @@ function PropertyPreview({ property, onClose }: { property: DbProperty; onClose:
           </div>
           <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
             <span className="rounded-lg bg-white/[0.04] px-2.5 py-1">{property.bedrooms ?? '?'} bed</span>
-            <span className="rounded-lg bg-white/[0.04] px-2.5 py-1">{property.bathrooms ?? '?'} bath</span>
+            {shouldShowBathrooms(property.bedrooms, property.property_type) && (
+              <span className="rounded-lg bg-white/[0.04] px-2.5 py-1">{property.bathrooms ?? '?'} bath</span>
+            )}
             <span className="rounded-lg bg-white/[0.04] px-2.5 py-1 capitalize">{property.property_type}</span>
             {property.furnished && <span className="rounded-lg bg-trace-cyan/10 text-trace-cyan px-2.5 py-1">Furnished</span>}
             {property.size_sqm && <span className="rounded-lg bg-white/[0.04] px-2.5 py-1">{property.size_sqm} m²</span>}
@@ -180,7 +184,10 @@ export function AdminDashboardPage() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { role } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
+
+  const isAdmin = role === 'admin'
 
   const [searchText, setSearchText] = useState('')
   const [page, setPage] = useState(0)
@@ -195,14 +202,27 @@ export function AdminDashboardPage() {
   const allRows = q.data ?? []
   const filteredRows = useMemo(() => {
     if (!searchText.trim()) return allRows
-    const st = searchText.toLowerCase()
-    return allRows.filter((r) => (
-      r.title?.toLowerCase().includes(st) ||
-      r.listing_reference?.toLowerCase().includes(st) ||
-      r.town?.toLowerCase().includes(st) ||
-      r.county?.toLowerCase().includes(st) ||
-      r.estate?.toLowerCase().includes(st)
-    ))
+    const st = searchText.toLowerCase().trim()
+    const terms = st.split(/\s+/).filter(Boolean)
+    
+    return allRows.filter((r) => {
+      const searchableText = [
+        r.title,
+        r.description,
+        r.admin_description,
+        r.listing_reference,
+        r.town,
+        r.county,
+        r.area_label,
+        r.estate,
+        r.address,
+        r.owner_phone,
+        r.property_type,
+        ...(r.amenity_names ?? []),
+      ].filter(Boolean).join(' ').toLowerCase()
+      
+      return terms.every(term => searchableText.includes(term))
+    })
   }, [allRows, searchText])
 
   const sortedRows = useMemo(() => {
@@ -383,13 +403,15 @@ export function AdminDashboardPage() {
           >
             <Map className="h-3.5 w-3.5" /> Map view
           </button>
-          <button
-            type="button"
-            onClick={() => navigate('/admin/activity')}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-300 hover:text-white hover:border-white/20 transition-colors"
-          >
-            <ScrollText className="h-3.5 w-3.5" /> Activity
-          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => navigate('/admin/activity')}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-300 hover:text-white hover:border-white/20 transition-colors"
+            >
+              <ScrollText className="h-3.5 w-3.5" /> Activity
+            </button>
+          )}
           <button
             type="button"
             onClick={() => navigate('/admin/inquiries')}
@@ -430,9 +452,11 @@ export function AdminDashboardPage() {
           <button onClick={() => handleBulkAction('unpublish')} className="badge badge-amber cursor-pointer hover:bg-amber-400/20 transition-colors">
             Unpublish
           </button>
-          <button onClick={() => handleBulkAction('delete')} className="badge badge-rose cursor-pointer hover:bg-rose-400/20 transition-colors">
-            Delete
-          </button>
+          {isAdmin && (
+            <button onClick={() => handleBulkAction('delete')} className="badge badge-rose cursor-pointer hover:bg-rose-400/20 transition-colors">
+              Delete
+            </button>
+          )}
           <button onClick={() => setSelectedIds(new Set())} className="text-xs text-zinc-600 hover:text-white ml-auto transition-colors">
             Cancel
           </button>
@@ -624,13 +648,15 @@ export function AdminDashboardPage() {
                         >
                           <Edit3 className="h-4 w-4" />
                         </Link>
-                        <button
-                          onClick={() => confirmDelete(r.id)}
-                          disabled={deleting === r.id}
-                          className="rounded-lg p-2 text-zinc-500 hover:text-rose-400 hover:bg-white/[0.06] transition-all disabled:opacity-30"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => confirmDelete(r.id)}
+                            disabled={deleting === r.id}
+                            className="rounded-lg p-2 text-zinc-500 hover:text-rose-400 hover:bg-white/[0.06] transition-all disabled:opacity-30"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

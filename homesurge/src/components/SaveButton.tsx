@@ -1,4 +1,5 @@
 import { Heart } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 type Props = {
   id: string
@@ -8,9 +9,21 @@ type Props = {
 }
 
 export function SaveButton({ id, isFavorite, onToggle, compact }: Props) {
+  const { user } = useAuth()
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!user) {
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`
+      return
+    }
+    onToggle(id)
+  }
+
   return (
     <button
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggle(id) }}
+      onClick={handleClick}
       className={`flex items-center justify-center transition-all duration-200 ${
         isFavorite
           ? 'text-rose-400'

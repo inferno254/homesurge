@@ -1,0 +1,10 @@
+{
+  "folders": [
+    { "path": "admin" },
+    { "path": "homesurge/mobile" }
+  ],
+  "settings": {
+    "dart.analyzeAdditionalProfiles": [],
+    "dart.additionalAnalyzerFileExtensions": []
+  }
+}
