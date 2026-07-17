@@ -115,6 +115,10 @@ export function AdminMap({ properties, onMarkerHover, activeLayer, onMapReady, v
           )
         }
       }
+
+      setTimeout(() => {
+        map.invalidateSize()
+      }, 100)
     }, [map])
 
     useMapEvents({
