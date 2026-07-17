@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 
-let globalSetup = false
+let channelCreated = false
 
 export function useRealtimeInquiries() {
   const qc = useQueryClient()
@@ -18,12 +18,9 @@ export function useRealtimeInquiries() {
   })
   useEffect(() => {
     if (!supabase) { setStatus('error'); return }
+    if (channelCreated) { setStatus('connected'); return }
+    channelCreated = true
     setStatus('connecting')
-    if (globalSetup) {
-      setStatus('connected')
-      return
-    }
-    globalSetup = true
     const name = 'admin-inquiries-realtime'
     try {
       const existing = supabase.getChannels().find((c: any) => c.topic === `realtime:${name}`)
@@ -49,6 +46,6 @@ export function useRealtimeInquiries() {
     } catch (e) {
       setStatus('error')
     }
-  },[qc])
+  },[])
   return { inquiries, isLoading, status, refetch, count: inquiries.length }
 }
