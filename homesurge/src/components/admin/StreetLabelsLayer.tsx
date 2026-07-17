@@ -98,7 +98,7 @@ export function StreetLabelsLayer({ visible, activeLayerLabel, bounds }: Props) 
 
   useEffect(() => {
     if (!streetData && shouldShow) {
-      loadStreetData().then(setStreetData).catch((e) => console.error('Street labels load failed:', e))
+      loadStreetData().then(setStreetData).catch(() => {})
     }
   }, [shouldShow, streetData])
 
