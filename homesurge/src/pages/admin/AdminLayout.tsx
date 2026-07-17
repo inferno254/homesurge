@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, Navigate, Outlet } from 'react-router-dom'
 import { LayoutDashboard, Map, PlusCircle, Menu, X, Phone, HelpCircle, ScrollText, Users, BarChart3 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { NotificationBell } from '../../components/admin/NotificationBell'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { AdminChatSidebar } from '../../components/ai/AdminChatSidebar'
 
@@ -73,7 +72,6 @@ export function AdminLayout() {
             >
               <HelpCircle className="h-4 w-4" />
             </button>
-            <NotificationBell />
             <button
               type="button"
               onClick={() => signOut()}
