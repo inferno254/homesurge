@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { Sparkles, MapPin, Crosshair, Navigation } from 'lucide-react'
+import { Sparkles, Navigation } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { supabase } from '../../lib/supabase'

@@ -209,7 +209,6 @@ export function AdminDashboardPage() {
       const searchableText = [
         r.title,
         r.description,
-        r.admin_description,
         r.listing_reference,
         r.town,
         r.county,

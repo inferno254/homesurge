@@ -7,7 +7,7 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { AdminChatSidebar } from '../../components/ai/AdminChatSidebar'
 
 export function AdminLayout() {
-  const { loading, role, user, signOut } = useAuth()
+  const { loading, role, signOut } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
 

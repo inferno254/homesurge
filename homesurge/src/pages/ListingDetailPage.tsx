@@ -47,12 +47,6 @@ export function ListingDetailPage() {
     enabled: Boolean(configured && id),
   })
 
-  const allQuery = useQuery({
-    queryKey: ['public-properties-all'],
-    queryFn: loadAll,
-    enabled: configured,
-  })
-
   usePageMeta(
     q.data?.title ?? 'Loading...',
     q.data ? `${q.data.bedrooms ?? '?'} bed · ${q.data.bathrooms ?? '?'} bath · KSh ${Number(q.data.price).toLocaleString()} · ${q.data.town}, ${q.data.county}` : undefined,

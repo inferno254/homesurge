@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Navigate } from 'react-router-dom'
 import { RefreshCw, TrendingUp, Home, Eye, EyeOff, Phone, DollarSign, Activity, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { useToast } from '../../components/Toast'
@@ -100,7 +100,7 @@ async function fetchAnalytics(): Promise<AnalyticsData> {
     return acc
   }, {} as Record<string, number>)
   const topTowns = Object.entries(townCount)
-    .map(([town, count]) => ({ town, count }))
+    .map(([town, count]) => ({ town, count: Number(count) }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5)
 
@@ -109,7 +109,7 @@ async function fetchAnalytics(): Promise<AnalyticsData> {
     return acc
   }, {} as Record<string, number>)
   const propertyTypes = Object.entries(typeCount)
-    .map(([type, count]) => ({ type, count }))
+    .map(([type, count]) => ({ type, count: Number(count) }))
     .sort((a, b) => b.count - a.count)
 
   return {
@@ -243,7 +243,6 @@ function DonutChart({ data, colors }: { data: { action: string; count: number }[
 export function AdminAnalyticsPage() {
   const { role } = useAuth()
   const { toast } = useToast()
-  const qc = useQueryClient()
 
   if (role !== 'admin') {
     return <Navigate to="/admin" replace />
@@ -375,7 +374,7 @@ export function AdminAnalyticsPage() {
         <div className="rounded-2xl border border-white/[0.08] bg-trace-card p-5 space-y-4">
           <h3 className="text-sm font-semibold text-white">Property types</h3>
           <div className="space-y-3">
-            {data.propertyTypes.map((pt, i) => {
+            {data.propertyTypes.map((pt) => {
               const maxCount = data.propertyTypes[0]?.count || 1
               return (
                 <div key={pt.type} className="space-y-1.5">
