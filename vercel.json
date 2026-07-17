@@ -1,4 +1,6 @@
 {
+  "buildCommand": "cd homesurge && npm run build",
+  "outputDirectory": "homesurge/dist",
   "rewrites": [
     {
       "source": "/(.*)",
