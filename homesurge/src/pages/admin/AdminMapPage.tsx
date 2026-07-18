@@ -28,6 +28,22 @@ const locateUser = () => {
   if (!map) return
   if (map.locate) {
     map.locate({ setView: true, maxZoom: 18 })
+    map.once('locationfound', (e: any) => {
+      const { lat, lng } = e.latlng
+      try {
+        const container = map.getContainer?.()
+        if (container && container.offsetWidth > 0 && container.offsetHeight > 0) {
+          map.setView([lat, lng], 16)
+        }
+      } catch {}
+      L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: 'user-location-dot',
+          iconSize: [12, 12],
+          iconAnchor: [6, 6],
+        }),
+      }).addTo(map)
+    })
   }
 }
 

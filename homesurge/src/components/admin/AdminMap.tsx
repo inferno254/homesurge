@@ -101,6 +101,12 @@ export function AdminMap({ properties, onMarkerHover, activeLayer, onMapReady, v
               const lng = pos.coords.longitude
               _setUserLocation({ lat, lng })
               _setUserHeading(pos.coords.heading ?? null)
+              try {
+                const container = map.getContainer?.()
+                if (container && container.offsetWidth > 0 && container.offsetHeight > 0) {
+                  map.setView([lat, lng], 16)
+                }
+              } catch {}
               const marker = L.marker([lat, lng], {
                 icon: L.divIcon({
                   className: 'user-location-dot',
@@ -111,7 +117,7 @@ export function AdminMap({ properties, onMarkerHover, activeLayer, onMapReady, v
               userMarkerRef.current = marker
             },
             () => {},
-            { enableHighAccuracy: true, timeout: 5000 }
+            { enableHighAccuracy: true, timeout: 10000 }
           )
         }
       }
