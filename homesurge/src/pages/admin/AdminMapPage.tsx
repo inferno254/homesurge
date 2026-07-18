@@ -318,6 +318,8 @@ export function AdminMapPage() {
     const map = (window as any)._homesurge_map_instance
     if (!map) return
     try {
+      const container = map.getContainer?.()
+      if (!container || container.offsetWidth === 0 || container.offsetHeight === 0) return
       const b = map.getBounds()
       const fc = await fetchBuildingsByBounds(b.getWest(), b.getSouth(), b.getEast(), b.getNorth())
       if (fc.features.length > 0) setBuildingsGeoJSON(fc)

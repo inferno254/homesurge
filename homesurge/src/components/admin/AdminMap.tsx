@@ -116,10 +116,16 @@ export function AdminMap({ properties, onMarkerHover, activeLayer, onMapReady, v
         }
       }
 
-      setTimeout(() => {
-        map.invalidateSize()
-      }, 100)
-    }, [map])
+      const timer = setTimeout(() => {
+        try {
+          const container = map.getContainer()
+          if (container && container.offsetWidth > 0 && container.offsetHeight > 0) {
+            map.invalidateSize()
+          }
+        } catch {}
+      }, 150)
+      return () => clearTimeout(timer)
+    }, [])
 
     useMapEvents({
       contextmenu: (e) => {

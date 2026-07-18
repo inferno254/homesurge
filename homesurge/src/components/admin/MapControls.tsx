@@ -80,20 +80,26 @@ export function MapControls({ isLive, status, onLocate, onLayerChange, activeLay
     <div className="absolute top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-auto">
       {/* Layer Switcher */}
       <div className="glass-card flex rounded-lg overflow-hidden shadow-lg border border-white/20">
-        {tileLayers.map((layer, index) => (
-          <button
-            key={layer.label}
-            type="button"
-            onClick={() => onLayerChange(index)}
-            className={`px-3 py-1 text-xs font-medium transition-colors ${
-              activeLayerIndex === index
-                ? 'bg-cyan-500 text-trace-dusk'
-                : 'text-zinc-400 hover:bg-white/10'
-            }`}
-          >
-            {layer.label}
-          </button>
-        ))}
+        {tileLayers.map((layer, index) => {
+          const active = activeLayerIndex === index
+          const colorClass = active
+            ? index === 0
+              ? 'bg-cyan-500 text-trace-dusk'
+              : index === 1
+                ? 'bg-violet-500 text-white'
+                : 'bg-amber-400 text-trace-dusk'
+            : 'text-zinc-400 hover:bg-white/10'
+          return (
+            <button
+              key={layer.label}
+              type="button"
+              onClick={() => onLayerChange(index)}
+              className={`px-3 py-1 text-xs font-medium transition-colors ${colorClass}`}
+            >
+              {layer.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Zoom and Utility Controls */}

@@ -253,7 +253,12 @@ export function AdminPropertyFormPage() {
             ...(geo ? { county: geo.county, town: geo.town, address: geo.fullAddress } : {}),
           }))
           if (map) {
-            map.setView([lat, lng], 16)
+            try {
+              const container = map.getContainer?.()
+              if (container && container.offsetWidth > 0 && container.offsetHeight > 0) {
+                map.setView([lat, lng], 16)
+              }
+            } catch {}
             if (pickedMarkerRef.current) {
               pickedMarkerRef.current.setLatLng([lat, lng])
             } else {
