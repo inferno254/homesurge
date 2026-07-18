@@ -1,0 +1,11 @@
+.git
+.gitignore
+.vercel
+admin/
+mobile/
+node_modules/
+supabase/
+*.md
+*.log
+.kilo/
+.snapshots/
