@@ -334,98 +334,6 @@ export function AdminMapPage() {
     debouncedMoveRef.current = window.setTimeout(() => handleMapMove(), 500)
   }, [handleMapMove])
 
-  const [importing, setImporting] = useState(false)
-  const [importStatus, setImportStatus] = useState('')
-
-  const importNairobiBuildings = useCallback(async () => {
-    if (!supabase) return
-    setImporting(true)
-    setImportStatus('Preparing tiles...')
-    try {
-      const bboxStr = '-1.45,36.68,-1.34,36.80'
-      const [minLat, minLon, maxLat, maxLon] = bboxStr.split(',').map(Number)
-      const step = 0.04
-      const tiles: { minLat: number; minLon: number; maxLat: number; maxLon: number }[] = []
-      for (let lat = minLat; lat < maxLat; lat += step) {
-        for (let lon = minLon; lon < maxLon; lon += step) {
-          tiles.push({
-            minLat: lat,
-            minLon: lon,
-            maxLat: Math.min(lat + step, maxLat),
-            maxLon: Math.min(lon + step, maxLon),
-          })
-        }
-      }
-
-      setImportStatus(`Importing ${tiles.length} map tiles...`)
-      let totalInserted = 0
-      for (let i = 0; i < tiles.length; i++) {
-        const t = tiles[i]
-        const bbox = `${t.minLat},${t.minLon},${t.maxLat},${t.maxLon}`
-        setImportStatus(`Fetching tile ${i + 1}/${tiles.length}...`)
-        const query = `[out:json][timeout:90];(way["building"](${bbox});relation["building"](${bbox}););out body;>;out skel qt;`
-        const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`
-        const resp = await fetch(url)
-        if (!resp.ok) {
-          setImportStatus(`Tile ${i + 1}/${tiles.length} skipped: Overpass ${resp.status}`)
-          continue
-        }
-        const data = await resp.json()
-        const elements = data.elements || []
-        if (elements.length === 0) continue
-
-        const nodes: Record<number, [number, number]> = {}
-        const ways: Record<number, number[]> = {}
-        for (const el of elements) {
-          if (el.type === 'node') nodes[el.id] = [el.lon, el.lat]
-          else if (el.type === 'way') ways[el.id] = el.nodes || []
-        }
-
-        const features: GeoJSON.Feature[] = []
-        for (const el of elements) {
-          if (el.type !== 'way' || !el.tags?.building) continue
-          const coords = (el.nodes as number[]).map((nid: number) => nodes[nid]).filter((c: [number, number] | undefined) => !!c) as [number, number][]
-          if (coords.length < 3) continue
-          features.push({
-            type: 'Feature',
-            properties: {
-              osm_id: el.id,
-              building: el.tags.building,
-              height: el.tags.height || '8',
-              name: el.tags.name || '',
-            },
-            geometry: { type: 'Polygon', coordinates: [coords] },
-          })
-        }
-
-        if (features.length === 0) continue
-
-        const batchSize = 500
-        for (let j = 0; j < features.length; j += batchSize) {
-          const batch = features.slice(j, j + batchSize)
-          const { data: inserted, error } = await supabase.rpc('bulk_insert_buildings', {
-            p_features: batch,
-            p_default_height_m: 8,
-            p_default_status: 'unverified',
-          })
-          if (error) {
-            setImportStatus(`Tile ${i + 1} batch error: ${error.message}`)
-            continue
-          }
-          totalInserted += (inserted as number) || 0
-        }
-        setImportStatus(`Tile ${i + 1}/${tiles.length} done. Total: ${totalInserted}`)
-      }
-
-      setImportStatus(`Done! Imported ${totalInserted} buildings. Refreshing map...`)
-      handleMapMove()
-    } catch (e) {
-      setImportStatus(`Import failed: ${e instanceof Error ? e.message : String(e)}`)
-    } finally {
-      setImporting(false)
-    }
-  }, [supabase, handleMapMove])
-
   const handleBuildingClick = useCallback((feature: GeoJSON.Feature | null) => {
     setSelectedBuilding(feature ? (feature as any).properties : null)
     if (feature) {
@@ -484,19 +392,6 @@ export function AdminMapPage() {
               </button>
             </span>
           )}
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              type="button"
-              onClick={importNairobiBuildings}
-              disabled={importing}
-              className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-1.5 text-[10px] font-medium text-cyan-300 hover:bg-cyan-500/20 disabled:opacity-50 transition-colors"
-            >
-              {importing ? 'Importing...' : 'Import Nairobi Buildings'}
-            </button>
-            {importStatus && (
-              <span className="text-[10px] text-zinc-400 max-w-[260px] truncate">{importStatus}</span>
-            )}
-          </div>
         </div>
 
         <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-white/10" style={{ height: '600px' }}>
