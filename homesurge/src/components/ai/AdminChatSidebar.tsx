@@ -22,6 +22,7 @@ export function AdminChatSidebar() {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!open) return
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, open])
 
@@ -48,73 +49,81 @@ export function AdminChatSidebar() {
     <>
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full px-4 py-3 shadow-lg transition-all ${
+        className={`fixed bottom-6 right-6 z-[9998] inline-flex items-center gap-2 rounded-full px-4 py-3 shadow-lg transition-all ${
           open ? 'bg-zinc-800 text-white' : 'bg-gradient-to-r from-cyan-500 to-violet-500 text-trace-dusk'
         }`}
       >
         {open ? <X className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
-        <span className="text-sm font-semibold">{open ? 'Close assistant' : 'AI Assistant'}</span>
+        <span className="text-sm font-semibold">{open ? 'Close' : 'AI Assistant'}</span>
       </button>
 
       {open && (
-        <div className="fixed bottom-20 right-6 z-50 w-[360px] max-h-[520px] flex flex-col rounded-2xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl">
-          <div className="flex items-center gap-2 border-b border-white/10 p-3">
-            <MessageSquare className="h-4 w-4 text-cyan-400" />
-            <p className="text-sm font-semibold text-white">Admin assistant</p>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
-                    m.role === 'user' ? 'bg-cyan-500/20 text-cyan-100' : 'bg-white/5 text-zinc-200'
-                  }`}
-                >
-                  {m.content}
-                </div>
+        <>
+          <div className="fixed inset-0 z-[9997] bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="fixed inset-x-4 bottom-20 right-4 z-[9998] w-auto max-w-[360px] flex flex-col rounded-2xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom duration-200">
+            <div className="flex items-center justify-between border-b border-white/10 p-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-cyan-400" />
+                <p className="text-sm font-semibold text-white">Admin assistant</p>
               </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="rounded-2xl bg-white/5 px-3 py-2 text-sm text-zinc-400 inline-flex items-center gap-2">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Thinking...
-                </div>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
-
-          <div className="border-t border-white/10 p-2">
-            <div className="flex flex-wrap gap-1 mb-2">
-              {QUICK_ACTIONS.map((a) => (
-                <button
-                  key={a.label}
-                  onClick={() => send(a.prompt)}
-                  className="text-[10px] rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-zinc-300 hover:text-white hover:border-white/20 transition-colors"
-                >
-                  {a.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && send(input)}
-                placeholder="Ask anything..."
-                className="flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-cyan-400 focus:outline-none"
-              />
-              <button
-                onClick={() => send(input)}
-                disabled={loading || !input.trim()}
-                className="rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 px-3 py-2 text-trace-dusk disabled:opacity-40 hover:opacity-90 transition-opacity"
-              >
-                <Send className="h-4 w-4" />
+              <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-white transition-colors">
+                <X className="h-4 w-4" />
               </button>
             </div>
+
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 max-h-[60vh]">
+              {messages.map((m, i) => (
+                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                      m.role === 'user' ? 'bg-cyan-500/20 text-cyan-100' : 'bg-white/5 text-zinc-200'
+                    }`}
+                  >
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="rounded-2xl bg-white/5 px-3 py-2 text-sm text-zinc-400 inline-flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Thinking...
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </div>
+
+            <div className="border-t border-white/10 p-2">
+              <div className="flex flex-wrap gap-1 mb-2">
+                {QUICK_ACTIONS.map((a) => (
+                  <button
+                    key={a.label}
+                    onClick={() => send(a.prompt)}
+                    className="text-[10px] rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-zinc-300 hover:text-white hover:border-white/20 transition-colors"
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && send(input)}
+                  placeholder="Ask anything..."
+                  className="flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-cyan-400 focus:outline-none"
+                />
+                <button
+                  onClick={() => send(input)}
+                  disabled={loading || !input.trim()}
+                  className="rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 px-3 py-2 text-trace-dusk disabled:opacity-40 hover:opacity-90 transition-opacity"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </>
   )
