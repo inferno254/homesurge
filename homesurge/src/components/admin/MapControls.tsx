@@ -77,9 +77,9 @@ export function MapControls({ isLive, status, onLocate, onLayerChange, activeLay
   }
 
   return (
-    <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+    <div className="absolute top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-auto">
       {/* Layer Switcher */}
-      <div className="glass-card flex rounded-lg overflow-hidden shadow-lg">
+      <div className="glass-card flex rounded-lg overflow-hidden shadow-lg border border-white/20">
         {tileLayers.map((layer, index) => (
           <button
             key={layer.label}
@@ -97,7 +97,7 @@ export function MapControls({ isLive, status, onLocate, onLayerChange, activeLay
       </div>
 
       {/* Zoom and Utility Controls */}
-      <div className="glass-card flex flex-col gap-1 p-1 rounded-lg shadow-lg">
+      <div className="glass-card flex flex-col gap-1 p-1 rounded-lg shadow-lg border border-white/20">
         {/* Realtime status dot */}
         <div
           className={`mb-1 h-2.5 w-2.5 rounded-full mx-auto ${

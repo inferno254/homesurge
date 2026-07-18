@@ -189,7 +189,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
             children: [
               TileLayer(
                 urlTemplate: layer['url']!,
-                userAgentPackageName: 'homesurge_mobile',
+                userAgentPackageName: 'homesurge_admin',
               ),
               if (showBuildings && _buildings.features.isNotEmpty)
                 PolygonLayer(
